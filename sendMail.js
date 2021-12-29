@@ -47,5 +47,5 @@ const puppeteer = require("puppeteer");
     await page.$eval("#password", el => el.value="defaultpw"); // 비밀번호
 
     // 발송
-    // await page.click("#submit");
+    await page.click("#submit");
 })();
