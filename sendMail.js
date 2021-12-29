@@ -1,20 +1,25 @@
+module.exports = sendMail;
+const puppeteer = require("puppeteer");
+
 // 훈련생 정보
 const soldierName="";
 const soldierBirthday={year:"2000", month:"04", day:"27"};
+//
+const urlNumber = 0;
+const urls = [
+    "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156893223&siteId=last2", // 기본군사훈련단
+    "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156894686&siteId=tong-new&menuUIType=sub" // 정보통신학교
+];
 
-const puppeteer = require("puppeteer");
-(async () =>
-{
-    const browser = await puppeteer.launch({
-        headless: false, ignoreHTTPSErrors: true, args: ["--ignore-certificate-errors"],});
+async function sendMail() {
+    const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
-    let pages;
     const nav = new Promise(res => browser.on('targetcreated', res));
     await page.setViewport({ width: 1280, height: 720 });
     
     // 공군 기본군사훈련단
-    await page.goto("https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156893223&siteId=last2");
-    
+    await page.goto(urls[urlNumber]);
+
     // 훈련생 정보 입력
     await page.type("#birthYear", soldierBirthday.year);
     await page.type("#birthMonth", soldierBirthday.month);
@@ -24,7 +29,7 @@ const puppeteer = require("puppeteer");
     await page.waitForTimeout(100);
     await page.click("#btnNext");
     await nav
-    pages = await browser.pages();
+    let pages = await browser.pages();
     await pages[2].waitForSelector(".choice");
     await pages[2].click(".choice");
     await page.click("#btnNext");
@@ -42,10 +47,21 @@ const puppeteer = require("puppeteer");
     await page.$eval("#relationship", el => el.value="몰?루"); // 관계
 
     // 내용 입력
-    await page.$eval("#title", el => el.value=""); // 제목
-    await page.$eval("#contents", el => el.value=""); // 내용
+    await page.$eval("#title", el => el.value="test title"); // 제목
+    await page.$eval("#contents", el => el.value="test contents"); // 내용
     await page.$eval("#password", el => el.value="defaultpw"); // 비밀번호
 
     // 발송
-    await page.click("#submit");
-})();
+    await page.click(".submit");
+
+    await page.waitForNavigation();
+    let checkSuccess = await page.$eval(".message", el => el.innerText);
+    if(checkSuccess == "정상적으로 등록되었습니다.") {
+        await browser.close();
+        return 0;
+    }
+    else {
+        await browser.close();
+        throw new Error("비정상 등록");
+    }
+};
