@@ -4,7 +4,8 @@ const puppeteer = require("puppeteer");
 // 훈련생 정보
 const soldierName="";
 const soldierBirthday={year:"2000", month:"04", day:"27"};
-//
+
+// 0: 기본군사훈련단, 1: 정보통신학교
 const urlNumber = 0;
 const urls = [
     "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156893223&siteId=last2", // 기본군사훈련단
@@ -16,8 +17,6 @@ async function sendMail() {
     const page = await browser.newPage();
     const nav = new Promise(res => browser.on('targetcreated', res));
     await page.setViewport({ width: 1280, height: 720 });
-    
-    // 공군 기본군사훈련단
     await page.goto(urls[urlNumber]);
 
     // 훈련생 정보 입력
@@ -65,3 +64,5 @@ async function sendMail() {
         throw new Error("비정상 등록");
     }
 };
+
+sendMail();
