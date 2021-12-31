@@ -5,7 +5,6 @@ const rw = require("./readFile.js");
 // 훈련생 정보
 const soldierName = rw.readSettings("soldierName");
 const soldierBirthday = rw.readSettings("soldierBirthday");
-console.log(soldierName, soldierBirthday);
 
 // 0: 기본군사훈련단, 1: 정보통신학교
 const urlNumber = rw.readSettings("mailTarget");
@@ -15,18 +14,20 @@ const urls = [
 ];
 
 async function sendMail(title, contents) {
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     const nav = new Promise(res => browser.on('targetcreated', res));
     await page.setViewport({ width: 1280, height: 720 });
     await page.goto(urls[urlNumber]);
 
+    console.log(title + " 작성");
+    
     // 훈련생 정보 입력
     await page.type("#searchName", soldierName);
     await page.type("#birthYear", soldierBirthday.year);
     await page.type("#birthMonth", soldierBirthday.month);
     await page.type("#birthDay", soldierBirthday.day);
-
+    
     await page.waitForTimeout(100);
     await page.click("#btnNext");
     await nav
@@ -34,7 +35,7 @@ async function sendMail(title, contents) {
     await pages[2].waitForSelector(".choice");
     await pages[2].click(".choice");
     await page.click("#btnNext");
-
+    
     // 편지 쓰기
     await page.waitForSelector("div.UIbtn > span > input");
     await page.click("div.UIbtn > span > input");
@@ -53,11 +54,12 @@ async function sendMail(title, contents) {
         document.querySelector("#contents").value = contents.join('');
     }, {title, contents});
     await page.$eval("#password", el => el.value="defaultpw"); // 비밀번호
-
+    
     // 발송
     await page.click(".submit");
 
-    await page.waitForNavigation();
+    // await page.waitForNavigation(); -> Navitagion Timeout?
+    await page.waitForSelector(".message");
     let checkSuccess = await page.$eval(".message", el => el.innerText);
     if(checkSuccess == "정상적으로 등록되었습니다.") {
         await browser.close();

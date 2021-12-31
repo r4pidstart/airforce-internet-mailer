@@ -1,11 +1,11 @@
 // exports.giggleHW = scrapGiggleHW;
 exports.DCsff = scrapDCsff;
-exports.stock = scrapStock;
+exports.apiStock = scrapStocksUsingApi;
 
-const rw = require("./readFile.js");
 const puppeteer = require("puppeteer");
+const axios = require("axios").default;
+const rw = require("./readFile.js");
 const main = require("./main.js");
-const sendMail = require("./sendMail.js");
 let lastIds;
 
 async function getLastPostId(siteName) {
@@ -62,13 +62,14 @@ async function scrapDCsff() {
     });
 
     for(let i=postList.length-1; i>=0; i--) {
-        if(lastPostedId < postList[i]) {
+        if(parseInt(lastPostedId) < parseInt(postList[i])) {
             lastPostedId=postList[i];
+            console.log(siteName + " / " +postList[i] + "번 게시물");
             page.goto(link+postList[i]);
             await page.waitForSelector("span.title_subject");
             let mailTitle = await page.evaluate(() => {
-                return "sff / " + document.querySelector("span.gall_date").innerText + " <---본문---> "; 
-            });
+                return "sff / " + document.querySelector("span.gall_date").innerText; 
+            }) +  " / " + postList[i];
             let mailContents = await page.evaluate(() => {
 
                 async function getDCComments(container, elem) {
@@ -83,7 +84,7 @@ async function scrapDCsff() {
                 
                 let mailContents = [];
                 try {
-                    mailContents.push("sff / " + document.querySelector("span.title_subject").innerText + " / " + document.querySelectorAll("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText);
+                    mailContents.push("sff / " + document.querySelector("span.title_subject").innerText + " / " + document.querySelector("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText + " <---본문---> ");
                     
                     // const mainBody = document.querySelector("div.write_div").children;
                     for(let i=0; i<document.querySelector("div.write_div").children.length; i++)
@@ -122,10 +123,36 @@ async function scrapDCsff() {
     await browser.close();
 }
 
-async function scrapStock() {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto("");
-}
+// async function scrapStocksUsingApi() {
 
+//     function axiosOptions(userUrl) {
+//         const apiKey = rw.readSettings("yahooFinanceAPIKey");
+//         const ret = {
+//             method : "GET",
+//             url : userUrl,
+//             params : {modules: "defaultKeyStatistics,assetProfile"},
+//             headers : {
+//                 "x-api-key" : apiKey
+//             }
+//         };
+//         return ret;
+//     }
+
+//     const customStocksUrl = "https://yfapi.net/v6/finance/quote?region=US&lang=en&symbols=" + rw.readSettings("stockList");
+//     const marketSummaryUrl = "https://yfapi.net/v6/finance/quote/marketSummary?lang=en&region=US";
+
+//     let marketSummary, customStocks;
+
+//     //await axios.request(axiosOptions(marketSummaryUrl)).then(res => { marketSummary=res.data["marketSummaryResponse"]["result"]; });
+//     // await axios.request(axiosOptions(customStocksUrl)).then(res => { customStocks=res.data["marketSummaryResponse"]["result"] });
+    
+//     //require("fs").writeFileSync("./tmpJson.json", JSON.stringify(marketSummary));
+    
+//     marketSummary=JSON.parse(require("fs").readFileSync("./tmpJson.json").toString());
+//     console.log(marketSummary);
+//     const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
+//     delay(100000);
+// }
+
+// scrapStocksUsingApi();
 scrapDCsff();

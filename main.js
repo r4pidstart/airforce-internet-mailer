@@ -6,7 +6,8 @@ const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 
 async function trySendMail(title, contents)
 {
-    await delay(10000);
+    console.log(title + " 메일 작성 대기중");
+    await delay(20000);
     try {
         await sendMail(title, contents);
     }
