@@ -12,7 +12,7 @@ const urls = [
     "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156894686&siteId=tong-new&menuUIType=sub" // 정보통신학교
 ];
 
-async function sendMail() {
+async function sendMail(title, contents) {
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
     const nav = new Promise(res => browser.on('targetcreated', res));
@@ -46,8 +46,12 @@ async function sendMail() {
     await page.$eval("#relationship", el => el.value="몰?루"); // 관계
 
     // 내용 입력
-    await page.$eval("#title", el => el.value="test title"); // 제목
-    await page.$eval("#contents", el => el.value="test contents"); // 내용
+    await page.evaluate(({title, contents}) => {
+        document.querySelector("#title").value = title;
+        document.querySelector("#contents").value = contents.join('');
+    }, {title, contents});
+    // await page.$eval("#title", el => el.value=title); // 제목
+    // await page.$eval("#contents", el => el.value=contents.join('')); // 내용
     await page.$eval("#password", el => el.value="defaultpw"); // 비밀번호
 
     // 발송
@@ -64,5 +68,3 @@ async function sendMail() {
         throw new Error("비정상 등록");
     }
 };
-
-sendMail();
