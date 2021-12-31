@@ -2,6 +2,7 @@
 exports.DCsff = scrapDCsff;
 exports.apiStock = scrapStocksUsingApi;
 
+const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const puppeteer = require("puppeteer");
 const axios = require("axios").default;
 const rw = require("./readFile.js");
@@ -67,9 +68,11 @@ async function scrapDCsff() {
             console.log(siteName + " / " +postList[i] + "번 게시물");
             page.goto(link+postList[i]);
             await page.waitForSelector("span.title_subject");
+
             let mailTitle = await page.evaluate(() => {
                 return "sff / " + document.querySelector("span.gall_date").innerText; 
             }) +  " / " + postList[i];
+
             let mailContents = await page.evaluate(() => {
 
                 async function getDCComments(container, elem) {
@@ -84,7 +87,8 @@ async function scrapDCsff() {
                 
                 let mailContents = [];
                 try {
-                    mailContents.push("sff / " + document.querySelector("span.title_subject").innerText + " / " + document.querySelector("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText + " <---본문---> ");
+                    mailContents.push("sff / " + document.querySelector("span.title_subject").innerText + " / " 
+                        + document.querySelector("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText + " <---본문---> ");
                     
                     // const mainBody = document.querySelector("div.write_div").children;
                     for(let i=0; i<document.querySelector("div.write_div").children.length; i++)
@@ -123,36 +127,72 @@ async function scrapDCsff() {
     await browser.close();
 }
 
-// async function scrapStocksUsingApi() {
+async function scrapStocksUsingApi() {
 
-//     function axiosOptions(userUrl) {
-//         const apiKey = rw.readSettings("yahooFinanceAPIKey");
-//         const ret = {
-//             method : "GET",
-//             url : userUrl,
-//             params : {modules: "defaultKeyStatistics,assetProfile"},
-//             headers : {
-//                 "x-api-key" : apiKey
-//             }
-//         };
-//         return ret;
-//     }
+    function axiosOptions(userUrl) {
+        const apiKey = rw.readSettings("yahooFinanceAPIKey");
+        const ret = {
+            method : "GET",
+            url : userUrl,
+            params : {modules: "defaultKeyStatistics,assetProfile"},
+            headers : {
+                "x-api-key" : apiKey
+            }
+        };
+        return ret;
+    }
 
-//     const customStocksUrl = "https://yfapi.net/v6/finance/quote?region=US&lang=en&symbols=" + rw.readSettings("stockList");
-//     const marketSummaryUrl = "https://yfapi.net/v6/finance/quote/marketSummary?lang=en&region=US";
+    function parseSummaryContents(container, elem) {
+        for(let i=0; i<elem.length; i++) {
+            container.push(" <-------> ");
 
-//     let marketSummary, customStocks;
+            if(elem[i]["quoteType"] == "INDEX" || elem[i]["quoteType"] == "CURRENCY") {
+                container.push("[ " + elem[i]["shortName"] + " ]" + " - " + elem[i]["regularMarketPrice"]["fmt"] + " / " + elem[i]["regularMarketChangePercent"]["fmt"]);
+            }
+            else if(elem[i]["quoteType"] == "FUTURE") {
+                container.push("[ " + elem[i]["shortName"] + " ]" + " - $" + elem[i]["regularMarketPrice"]["fmt"] + " / " + elem[i]["regularMarketChangePercent"]["fmt"]);
+            }
+            else if(elem[i]["quoteType"] == "CRYPTOCURRENCY") {
+                container.push("[ " + elem[i]["symbol"] + " ]" + " - $" + elem[i]["regularMarketPrice"]["fmt"] + " / " + elem[i]["regularMarketChangePercent"]["fmt"]);
+            }
+        }   
+    }
 
-//     //await axios.request(axiosOptions(marketSummaryUrl)).then(res => { marketSummary=res.data["marketSummaryResponse"]["result"]; });
-//     // await axios.request(axiosOptions(customStocksUrl)).then(res => { customStocks=res.data["marketSummaryResponse"]["result"] });
+    function parseStockContents(container, elem) {
+        for(let i=0; i<elem.length; i++) {
+            container.push(" <-------> ");
+
+            if(elem[i]["quoteType"] == "INDEX" || elem[i]["quoteType"] == "CURRENCY") {
+                container.push("[ " + elem[i]["shortName"] + " (" + elem[i]["symbol"] + ")" + " ]" + " - " + elem[i]["regularMarketPrice"] + " / " + parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2) + "%"
+                    + " / Day range : " + elem[i]["regularMarketDayRange"] + " / 52 Week range : " + elem[i]["fiftyTwoWeekRange"]);
+            }
+            else if(elem[i]["quoteType"] == "CRYPTOCURRENCY" || elem[i]["quoteType"] == "EQUITY" || elem[i]["quoteType"] == "FUTURE") {
+                container.push("[ " + elem[i]["shortName"] + " (" + elem[i]["symbol"] + ")" + " ]" + " - " + elem[i]["regularMarketPrice"] + "$ / " + parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2) + "%"
+                    + " / Day range : " + elem[i]["regularMarketDayRange"] + " / 52 Week range : " + elem[i]["fiftyTwoWeekRange"]);
+            }
+            else if(elem[i]["quoteType"] == "ETF") {
+                container.push("[ " + elem[i]["longName"] + " (" + elem[i]["symbol"] + ")" + " ]" + " - " + elem[i]["regularMarketPrice"] + " / " + parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2) + "%"
+                    + " / Day range : " + elem[i]["regularMarketDayRange"] + " / 52 Week range : " + elem[i]["fiftyTwoWeekRange"]);
+            }
+        }   
+    }
+
+    const customStocksUrl = "https://yfapi.net/v6/finance/quote?region=US&lang=en&symbols=" + rw.readSettings("stockList");
+    const marketSummaryUrl = "https://yfapi.net/v6/finance/quote/marketSummary?lang=en&region=US";
+
+    let marketSummary, customStocks;
+
+    await axios.request(axiosOptions(marketSummaryUrl)).then(res => { marketSummary=res.data["marketSummaryResponse"]["result"]; });
+    await axios.request(axiosOptions(customStocksUrl)).then(res => { customStocks=res.data["quoteResponse"]["result"]; });
     
-//     //require("fs").writeFileSync("./tmpJson.json", JSON.stringify(marketSummary));
-    
-//     marketSummary=JSON.parse(require("fs").readFileSync("./tmpJson.json").toString());
-//     console.log(marketSummary);
-//     const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
-//     delay(100000);
-// }
+    const time = new Date();
+    const mailTitle = time.getFullYear() + '/' + ('0'+(time.getMonth()+1)).slice(-2) + '/' + ('0' + time.getDate()).slice(-2) + " " 
+        + ('0' + time.getHours()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2) + " - 이 시각 증권시장";
 
-// scrapStocksUsingApi();
-scrapDCsff();
+    let mailContents = [];
+    mailContents.push(marketSummary[0]["exchangeTimezoneName"] + " " + marketSummary[0]["regularMarketTime"]["fmt"]);
+    parseSummaryContents(mailContents, marketSummary);
+    parseStockContents(mailContents, customStocks);
+    
+    await main.trySendMail(mailTitle, mailContents);
+}

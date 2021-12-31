@@ -6,8 +6,7 @@ const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 
 async function trySendMail(title, contents)
 {
-    console.log(title + " 메일 작성 대기중");
-    await delay(20000);
+    console.log(title + " 메일 작성");
     try {
         await sendMail(title, contents);
     }
@@ -17,6 +16,7 @@ async function trySendMail(title, contents)
         await delay(500);
         await trySendMail(title, contents);
     }
+    await delay(20000);
 }
 
 // scrap.giggleHW();
