@@ -1,6 +1,6 @@
 // exports.giggleHW = scrapGiggleHW;
-// exports.DCsff = scrapDCsff;
-// exports.stock = scrapStock;
+exports.DCsff = scrapDCsff;
+exports.stock = scrapStock;
 
 const rw = require("./readFile.js");
 const puppeteer = require("puppeteer");
@@ -122,10 +122,10 @@ async function scrapDCsff() {
     await browser.close();
 }
 
-// async function scrapStock() {
-//     const browser = await puppeteer.launch();
-//     const page = await browser.newPage();
-//     await page.goto("");
-// }
+async function scrapStock() {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto("");
+}
 
 scrapDCsff();

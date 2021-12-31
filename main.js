@@ -20,3 +20,5 @@ async function trySendMail(title, contents)
 
 // scrap.giggleHW();
 // scrap.DCsff();
+
+// setInterval(scrap.DCsff, 900000); // 15분

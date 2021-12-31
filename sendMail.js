@@ -1,12 +1,14 @@
 module.exports = sendMail;
 const puppeteer = require("puppeteer");
+const rw = require("./readFile.js");
 
 // 훈련생 정보
-const soldierName="";
-const soldierBirthday={year:"2000", month:"04", day:"27"};
+const soldierName = rw.readSettings("soldierName");
+const soldierBirthday = rw.readSettings("soldierBirthday");
+console.log(soldierName, soldierBirthday);
 
 // 0: 기본군사훈련단, 1: 정보통신학교
-const urlNumber = 0;
+const urlNumber = rw.readSettings("mailTarget");
 const urls = [
     "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156893223&siteId=last2", // 기본군사훈련단
     "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156894686&siteId=tong-new&menuUIType=sub" // 정보통신학교
@@ -20,10 +22,10 @@ async function sendMail(title, contents) {
     await page.goto(urls[urlNumber]);
 
     // 훈련생 정보 입력
+    await page.type("#searchName", soldierName);
     await page.type("#birthYear", soldierBirthday.year);
     await page.type("#birthMonth", soldierBirthday.month);
     await page.type("#birthDay", soldierBirthday.day);
-    await page.type("#searchName", soldierName);
 
     await page.waitForTimeout(100);
     await page.click("#btnNext");
@@ -50,8 +52,6 @@ async function sendMail(title, contents) {
         document.querySelector("#title").value = title;
         document.querySelector("#contents").value = contents.join('');
     }, {title, contents});
-    // await page.$eval("#title", el => el.value=title); // 제목
-    // await page.$eval("#contents", el => el.value=contents.join('')); // 내용
     await page.$eval("#password", el => el.value="defaultpw"); // 비밀번호
 
     // 발송
