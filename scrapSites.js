@@ -2,11 +2,12 @@
 exports.DCsff = scrapDCsff;
 exports.apiStock = scrapStocksUsingApi;
 
-const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const puppeteer = require("puppeteer");
 const axios = require("axios").default;
 const rw = require("./readFile.js");
 const main = require("./main.js");
+
+const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 let lastIds;
 
 async function getLastPostId(siteName) {
@@ -26,6 +27,8 @@ async function getLastPostId(siteName) {
 
 async function scrapDCsff() {
     const siteName = "DCsff"
+    const nowTime = new Date();
+    console.log(('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2), siteName + " scrap");
     let lastPostedId = await getLastPostId(siteName);
     const args = [
         '--no-sandbox',
@@ -117,8 +120,8 @@ async function scrapDCsff() {
 
                 return mailContents; 
             });
-            await main.trySendMail(mailTitle, mailContents);
             console.log(mailTitle, mailContents, lastPostedId);
+            await main.trySendMail(mailTitle, mailContents);
             lastIds[siteName]=lastPostedId;
             rw.writeId(lastIds);
         }
@@ -127,7 +130,7 @@ async function scrapDCsff() {
     await browser.close();
 }
 
-async function scrapStocksUsingApi() {
+async function scrapStocksUsingApi(region) {
 
     function axiosOptions(userUrl) {
         const apiKey = rw.readSettings("yahooFinanceAPIKey");
@@ -177,22 +180,28 @@ async function scrapStocksUsingApi() {
         }   
     }
 
-    const customStocksUrl = "https://yfapi.net/v6/finance/quote?region=US&lang=en&symbols=" + rw.readSettings("stockList");
+    const customStocksUrl = "https://yfapi.net/v6/finance/quote?region=US&lang=en&symbols=" + rw.readSettings(`${region}stockList`);
     const marketSummaryUrl = "https://yfapi.net/v6/finance/quote/marketSummary?lang=en&region=US";
-
-    let marketSummary, customStocks;
-
-    await axios.request(axiosOptions(marketSummaryUrl)).then(res => { marketSummary=res.data["marketSummaryResponse"]["result"]; });
-    await axios.request(axiosOptions(customStocksUrl)).then(res => { customStocks=res.data["quoteResponse"]["result"]; });
-    
-    const time = new Date();
-    const mailTitle = time.getFullYear() + '/' + ('0'+(time.getMonth()+1)).slice(-2) + '/' + ('0' + time.getDate()).slice(-2) + " " 
-        + ('0' + time.getHours()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2) + " - 이 시각 증권시장";
-
+    const nowTime = new Date();
+    const mailTitle = nowTime.getFullYear() + '/' + ('0'+(nowTime.getMonth()+1)).slice(-2) + '/' + ('0' + nowTime.getDate()).slice(-2) + " " 
+    + ('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + " - 이 시각 증권시장";
     let mailContents = [];
-    mailContents.push(marketSummary[0]["exchangeTimezoneName"] + " " + marketSummary[0]["regularMarketTime"]["fmt"]);
-    parseSummaryContents(mailContents, marketSummary);
-    parseStockContents(mailContents, customStocks);
+    let marketSummary, customStocks;
     
+    if(region == "US") {
+        await axios.request(axiosOptions(marketSummaryUrl)).then(res => { marketSummary=res.data["marketSummaryResponse"]["result"]; });
+        await axios.request(axiosOptions(customStocksUrl)).then(res => { customStocks=res.data["quoteResponse"]["result"]; });
+        mailContents.push(marketSummary[0]["exchangeTimezoneName"] + " " + marketSummary[0]["regularMarketTime"]["fmt"]);
+        parseSummaryContents(mailContents, marketSummary);
+        parseStockContents(mailContents, customStocks);
+    }
+    else if(region == "KR") {
+        await axios.request(axiosOptions(customStocksUrl)).then(res => { customStocks=res.data["quoteResponse"]["result"]; });
+        delay(100000);
+        mailContents.push(customStocks[0]["exchangeTimezoneName"] + " " + nowTime.toString());
+        parseStockContents(mailContents, customStocks);
+    }
+
+    console.log(mailTitle, mailContents);
     await main.trySendMail(mailTitle, mailContents);
 }
