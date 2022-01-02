@@ -24,9 +24,9 @@ async function trySendMail(title, contents)
 }
 
 setInterval(scrap.DCsff, 1200000);
-const usStockMarket = schedule.scheduleJob("0 0,2,4,6 * * 2-6", (scrap) => {
+const usStockMarket = schedule.scheduleJob("0 0,2,4,6 * * 2-6", () => {
     scrap.apiStock("US");
 });
-const ksStockMarket = schedule.scheduleJob("30 9,11,1,3 * * 1-5", (scrap) => {
+const krStockMarket = schedule.scheduleJob("30 9,11,13,15 * * 1-5", () => {
     scrap.apiStock("KR");
-})
+});
