@@ -6,11 +6,15 @@ const rw = require("./readFile.js");
 const soldierName = rw.readSettings("soldierName");
 const soldierBirthday = rw.readSettings("soldierBirthday");
 
-// 0: 기본군사훈련단, 1: 정보통신학교
+// 0: 기본군사훈련단, 1: 군수1학교, 3: 군수2학교, 4: 정보통신학교, 5:행정학교, 6: 방공포병학교
 const urlNumber = rw.readSettings("mailTarget");
 const urls = [
     "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156893223&siteId=last2", // 기본군사훈련단
-    "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156894686&siteId=tong-new&menuUIType=sub" // 정보통신학교
+    "http://airforce.mil.kr:8081/user/indexSub.action?codyMenuSeq=157620025&siteId=gisool2&menuUIType=sub", // 군수1학교
+    "http://airforce.mil.kr:8081/user/indexSub.action?codyMenuSeq=157615558&siteId=gunsu&menuUIType=sub", // 군수2학교
+    "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156894686&siteId=tong-new&menuUIType=sub", // 정보통신학교
+    "http://airforce.mil.kr:8081/user/indexSub.action?codyMenuSeq=159014200&siteId=haengjeong&menuUIType=sub", // 행정학교
+    "http://airforce.mil.kr:8081/user/indexSub.action?codyMenuSeq=158327574&siteId=bangpogyo&menuUIType=sub" // 방공포병학교
 ];
 
 const pw = rw.readSettings("userPassword");
