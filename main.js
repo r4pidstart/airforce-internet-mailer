@@ -40,9 +40,7 @@ async function start()
 async function init()
 {
     const rw = require("./readFile.js");
-    if(rw.checkSettings())
-        await rw.doInitSettings();
-    console.log("설정을 변경하려면 폴더 내 'settings.json'을 삭제 후 재실행 하세요.");
+    await rw.checkSettings();
     start();
 }
 

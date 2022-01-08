@@ -39,7 +39,7 @@ async function scrapDCgallery(galleryLink) {
     
     const options = {
         args,
-        headless: false,
+        headless: true,
         ignoreHTTPSErrors: true,
     };
     

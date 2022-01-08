@@ -5,6 +5,7 @@ exports.checkSettings = checkSettings;
 exports.doInitSettings = doInitSettings;
 
 const fs = require("fs");
+const { resolve } = require("path");
 const idPath = "./lastPostId.json";
 const settingsPath = "./settings.json";
 
@@ -25,10 +26,19 @@ function readSettings(type)
     return JSON.parse(fs.readFileSync(settingsPath).toString())[type];
 }
 
-function checkSettings()
+async function checkSettings()
 {
-    if(!fs.existsSync(settingsPath)) return 1;
-    else return 0;
+    if(!fs.existsSync(settingsPath)) await doInitSettings();
+    else {
+        console.log(`${readSettings("soldierName")} / ${readSettings("soldierBirthday").year} ${readSettings("soldierBirthday").month} ${readSettings("soldierBirthday").day}`);
+        const readline = require("readline");
+        const rl = readline.createInterface({input : process.stdin, output : process.stdout});
+        const ans = await new Promise(resolve => {
+            rl.question("설정을 변경하시겠습니까? (Y/N)\n>> ", resolve);
+        });
+        rl.close();
+        if(ans == 'Y' || ans == 'y') await doInitSettings();
+    };
 }
 
 async function doInitSettings() {
@@ -39,7 +49,7 @@ async function doInitSettings() {
         rl.question("훈련병 이름은? ex) 홍길동\n>> ", resolve);
     });
     const soldierBirthday = await new Promise(resolve => {
-        rl.question("훈련병 생일은? ex) 2000 01 01\n>> ", resolve);
+        rl.question("훈련병 생일은? ex) 2000 01 21\n>> ", resolve);
     });
     const soldierType = await new Promise(resolve => {
         rl.question("훈련병 소속\n1. 기본군사훈련단, 2. 군수1학교, 3. 군수2학교\n4. 정보통신학교, 5. 행정학교, 6. 방공포병학교\n>> ", ans => {resolve(ans-1);});
@@ -59,7 +69,6 @@ async function doInitSettings() {
             rl.question("갤러리 주소 ex) https://gall.dcinside.com/board/lists?id=pridepc_new4\n>> ", resolve);
         }));
     }
-
     rl.close();
     
     const defaultUSstockList = "ETH-USD,LTC-USD,INTC,AMD,NVDA,MSFT,U,SOXL,SOXS,KRW=X";
@@ -81,4 +90,5 @@ async function doInitSettings() {
     };
 
     fs.writeFileSync(settingsPath, JSON.stringify(array));
+    console.log("설정을 변경하려면 재실행 하세요.");
 }
