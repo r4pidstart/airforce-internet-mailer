@@ -1,6 +1,6 @@
 // exports.giggleHW = scrapGiggleHW;
-exports.DCsff = scrapDCsff;
-exports.apiStock = scrapStocksUsingApi;
+exports.DC = checkDCgallery;
+exports.stock = scrapStocksUsingApi;
 
 const puppeteer = require("puppeteer");
 const axios = require("axios").default;
@@ -19,17 +19,14 @@ async function getLastPostId(siteName) {
     return lastIds[siteName];
 }
 
-// async function scrapGiggleHW() {
-//     const browser = await puppeteer.launch();
-//     const page = await browser.newPage();
-//     await page.goto("");
-// }
+async function checkDCgallery() {
+    const galleryList = rw.readSettings("galleryList");
+    for(let i=0; i<galleryList.length; i++)
+        await scrapDCgallery(galleryList[i]);
+}
 
-async function scrapDCsff() {
-    const siteName = "DCsff"
+async function scrapDCgallery(galleryLink) {
     const nowTime = new Date();
-    console.log(('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2), siteName + " scrap");
-    let lastPostedId = await getLastPostId(siteName);
     const args = [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -39,22 +36,28 @@ async function scrapDCsff() {
         '--ignore-certifcate-errors-spki-list',
         '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"'
     ];
-
+    
     const options = {
         args,
-        headless: true,
+        headless: false,
         ignoreHTTPSErrors: true,
     };
-
+    
     const browser = await puppeteer.launch(options);
-
+    
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     page.setDefaultTimeout(0x7FFFFFFF);
-    page.goto("https://gall.dcinside.com/mgallery/board/lists?id=sff&exception_mode=recommend");
+    page.goto(galleryLink + "&exception_mode=recommend");
     await page.waitForSelector("tbody");
-    const link = "https://gall.dcinside.com/mgallery/board/view/?id=sff&no=";
+    const link = "https://gall.dcinside.com/" + galleryLink.split("?id=")[1] + "/";
     
+    const siteName = await page.evaluate(() => {
+        return document.querySelector("div.fl.clear > h2 > a").innerText;
+    });
+    let lastPostedId = await getLastPostId(siteName);
+    console.log(('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2), siteName + " scrap");
+
     // get post list
     const postList = await page.evaluate(() => {
         let posts = [];
@@ -65,7 +68,7 @@ async function scrapDCsff() {
         return posts;
     });
 
-    for(let i=postList.length-1; i>=0; i--) {
+    for(let i=postList.length-30; i>=0; i--) {
         if(parseInt(lastPostedId) < parseInt(postList[i])) {
             lastPostedId=postList[i];
             console.log(siteName + " / " +postList[i] + "번 게시물");
@@ -73,7 +76,7 @@ async function scrapDCsff() {
             await page.waitForSelector("span.title_subject");
 
             let mailTitle = await page.evaluate(() => {
-                return "sff / " + document.querySelector("span.gall_date").innerText; 
+                return document.querySelector("div.fl.clear > h2 > a").innerText + " / " + document.querySelector("span.gall_date").innerText; 
             }) +  " / " + postList[i];
 
             let mailContents = await page.evaluate(() => {
@@ -90,7 +93,7 @@ async function scrapDCsff() {
                 
                 let mailContents = [];
                 try {
-                    mailContents.push("sff / " + document.querySelector("span.title_subject").innerText + " / " 
+                    mailContents.push(document.querySelector("div.fl.clear > h2 > a").innerText + " / " + document.querySelector("span.title_subject").innerText + " / " 
                         + document.querySelector("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText + " <---본문---> ");
                     
                     // const mainBody = document.querySelector("div.write_div").children;
@@ -120,7 +123,7 @@ async function scrapDCsff() {
 
                 return mailContents; 
             });
-            console.log(mailTitle, mailContents, lastPostedId);
+            // console.log(mailTitle, mailContents, lastPostedId);
             await main.trySendMail(mailTitle, mailContents);
             lastIds[siteName]=lastPostedId;
             rw.writeId(lastIds);
@@ -131,6 +134,8 @@ async function scrapDCsff() {
 }
 
 async function scrapStocksUsingApi(region) {
+    
+    if(rw.readSettings("yahooFinanceAPIKey") == "") return;
 
     function axiosOptions(userUrl) {
         const apiKey = rw.readSettings("yahooFinanceAPIKey");
@@ -184,7 +189,7 @@ async function scrapStocksUsingApi(region) {
     const marketSummaryUrl = "https://yfapi.net/v6/finance/quote/marketSummary?lang=en&region=US";
     const nowTime = new Date();
     const mailTitle = nowTime.getFullYear() + '/' + ('0'+(nowTime.getMonth()+1)).slice(-2) + '/' + ('0' + nowTime.getDate()).slice(-2) + " " 
-    + ('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + " - 이 시각 증권시장";
+    + ('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + " - 이 시각 증권시장 " + region;
     let mailContents = [];
     let marketSummary, customStocks;
     
@@ -202,6 +207,6 @@ async function scrapStocksUsingApi(region) {
         parseStockContents(mailContents, customStocks);
     }
 
-    console.log(mailTitle, mailContents);
+    // console.log(mailTitle, mailContents);
     await main.trySendMail(mailTitle, mailContents);
 }

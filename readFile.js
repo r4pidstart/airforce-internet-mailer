@@ -21,7 +21,7 @@ function writePostId(ids)
 
 function readSettings(type)
 {
-    if(!fs.existsSync(settingsPath)) throw new Error("settings.json");
+    if(!fs.existsSync(settingsPath)) throw new Error("settings.json이 존재하지 않습니다.");
     return JSON.parse(fs.readFileSync(settingsPath).toString())[type];
 }
 
@@ -50,6 +50,15 @@ async function doInitSettings() {
     const yahooFinanceAPIKey = await new Promise(resolve => {
         rl.question("야후 파이낸스 api 키 (공란일 경우 미사용)\n>> ", resolve);
     });
+    let galleryList = [];
+    const linksCnt = await new Promise(resolve => {
+        rl.question("스크래핑 할 갤러리 개수\n>> ", resolve);
+    });
+    for(let i=0; i<linksCnt; i++) {
+        galleryList.push(await new Promise(resolve => {
+            rl.question("갤러리 주소 ex) https://gall.dcinside.com/board/lists?id=pridepc_new4\n>> ", resolve);
+        }));
+    }
 
     rl.close();
     
@@ -67,7 +76,8 @@ async function doInitSettings() {
         "mailTarget" : parseInt(soldierType),
         "yahooFinanceAPIKey" : yahooFinanceAPIKey,
         "USstockList" : defaultUSstockList,
-        "KRstockList" : defaultKRstockList
+        "KRstockList" : defaultKRstockList,
+        "galleryList" : galleryList
     };
 
     fs.writeFileSync(settingsPath, JSON.stringify(array));
