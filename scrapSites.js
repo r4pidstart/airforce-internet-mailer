@@ -1,4 +1,3 @@
-// exports.giggleHW = scrapGiggleHW;
 exports.DC = checkDCgallery;
 exports.stock = scrapStocksUsingApi;
 

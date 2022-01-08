@@ -5,7 +5,6 @@ exports.checkSettings = checkSettings;
 exports.doInitSettings = doInitSettings;
 
 const fs = require("fs");
-const { resolve } = require("path");
 const idPath = "./lastPostId.json";
 const settingsPath = "./settings.json";
 
@@ -46,13 +45,25 @@ async function doInitSettings() {
     const rl = readline.createInterface({input : process.stdin, output : process.stdout});
     
     const soldierName = await new Promise(resolve => {
-        rl.question("훈련병 이름은? ex) 홍길동\n>> ", resolve);
+        rl.question("훈련병 이름 ex) 홍길동\n>> ", resolve);
     });
     const soldierBirthday = await new Promise(resolve => {
-        rl.question("훈련병 생일은? ex) 2000 01 21\n>> ", resolve);
+        rl.question("훈련병 생일 ex) 2000 01 21\n>> ", resolve);
     });
     const soldierType = await new Promise(resolve => {
         rl.question("훈련병 소속\n1. 기본군사훈련단, 2. 군수1학교, 3. 군수2학교\n4. 정보통신학교, 5. 행정학교, 6. 방공포병학교\n>> ", ans => {resolve(ans-1);});
+    });
+    const userName = await new Promise(resolve => {
+        rl.question("메일을 보내는 데 사용할 이름\n>> ", resolve);
+    }, resolve);
+    const userRelationship = await new Promise(resolve => {
+        rl.question("메일을 보내는 사람과의 관계\n>> ", resolve);
+    });
+    const userZipcode = await new Promise(resolve => {
+        rl.question("메일을 보내는 사람의 우편번호 ex) 03048\n>> ", resolve);
+    });
+    const userAddress = await new Promise(resolve => {
+        rl.question("메일을 보내는 사람의 주소\n>> ", resolve);
     });
     const mailPassword = await new Promise(resolve => {
         rl.question("메일을 보내는 데 사용할 비밀번호\n>> ", resolve);
@@ -81,6 +92,10 @@ async function doInitSettings() {
             "month" : soldierBirthday.split(' ')[1],
             "day" : soldierBirthday.split(' ')[2] 
         },
+        "userName" : userName,
+        "userRelationship" : userRelationship,
+        "userZipcode" : userZipcode,
+        "userAddress" : userAddress,
         "userPassword" : mailPassword,
         "mailTarget" : parseInt(soldierType),
         "yahooFinanceAPIKey" : yahooFinanceAPIKey,

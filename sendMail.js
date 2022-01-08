@@ -6,6 +6,13 @@ const rw = require("./readFile.js");
 const soldierName = rw.readSettings("soldierName");
 const soldierBirthday = rw.readSettings("soldierBirthday");
 
+// 보내는 사람 정보
+const userName = rw.readSettings("userName");
+const userRelationship = rw.readSettings("userRelationship");
+const userZipcode = rw.readSettings("userZipcode");
+const userAddress = rw.readSettings("userAddress");
+const pw = rw.readSettings("userPassword");
+
 // 0: 기본군사훈련단, 1: 군수1학교, 3: 군수2학교, 4: 정보통신학교, 5:행정학교, 6: 방공포병학교
 const urlNumber = rw.readSettings("mailTarget");
 const urls = [
@@ -17,7 +24,6 @@ const urls = [
     "http://airforce.mil.kr:8081/user/indexSub.action?codyMenuSeq=158327574&siteId=bangpogyo&menuUIType=sub" // 방공포병학교
 ];
 
-const pw = rw.readSettings("userPassword");
 
 async function sendMail(title, contents) {
     const args = [
@@ -64,11 +70,11 @@ async function sendMail(title, contents) {
     
     // 주소 입력
     await page.waitForSelector("#senderZipCode");
-    await page.$eval("#senderZipCode", el => el.value="03048"); // 우편번호
-    await page.$eval("#senderAddr1", el => el.value="서울특별시 종로구 청와대로 1"); // 주소 1
+    await page.$eval("#senderZipCode", (el, userZipcode) => el.value=userZipcode, userZipcode); // 우편번호
+    await page.$eval("#senderAddr1", (el, userAddress) => el.value=userAddress, userAddress); // 주소 1
     await page.$eval("#senderAddr2", el => el.value="."); // 주소 2
-    await page.$eval("#senderName", el => el.value="정보봇"); // 보내는 사람
-    await page.$eval("#relationship", el => el.value="몰?루"); // 관계
+    await page.$eval("#senderName", (el, userName) => el.value=userName, userName); // 보내는 사람
+    await page.$eval("#relationship", (el, userRelationship) => el.value=userRelationship, userRelationship); // 관계
 
     // 내용 입력
     await page.evaluate(({title, contents, pw}) => {
