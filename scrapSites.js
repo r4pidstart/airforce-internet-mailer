@@ -83,23 +83,23 @@ async function scrapDCgallery(galleryLink) {
                 async function getDCComments(container, elem) {
                     container.push(elem.querySelector("span.nickname").innerText + " // ");
                     try {
-                        container.push(elem.querySelector("p.usertxt").innerText + " <-개행-> ");
+                        container.push(elem.querySelector("p.usertxt").innerText + " ---- ");
                     }
                     catch {
-                        container.push("디씨콘 (" + elem.querySelector("span.over_alt").innerText + ") <-개행-> ");
+                        container.push("디씨콘 (" + elem.querySelector("span.over_alt").innerText + ") ---- ");
                     }
                 }
                 
                 let mailContents = [];
                 try {
                     mailContents.push(document.querySelector("div.fl.clear > h2 > a").innerText + " / " + document.querySelector("span.title_subject").innerText + " / " 
-                        + document.querySelector("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText + " <---본문---> ");
+                        + document.querySelector("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText + " ---본문--- ");
                     
                     // const mainBody = document.querySelector("div.write_div").children;
                     for(let i=0; i<document.querySelector("div.write_div").children.length; i++)
-                        mailContents.push(document.querySelector("div.write_div").children[i].innerText + " <-개행-> ");
+                        mailContents.push(document.querySelector("div.write_div").children[i].innerText + " ---- ");
     
-                    mailContents.push("<---- 댓글 ----> ");
+                    mailContents.push("---- 댓글 ---- ");
                     // const commentsBody = document.querySelector("ul.cmt_list").children;
     
                     for(let i=0; i<document.querySelector("ul.cmt_list").children.length; i++){
@@ -110,11 +110,11 @@ async function scrapDCgallery(galleryLink) {
                         else if(document.querySelector("ul.cmt_list").children[i].classList.length == 0) {
                             // const replyBody = document.querySelector("ul.cmt_list").children[i].querySelector("ul.reply_list").children;
     
-                            mailContents.push(" <- 리플 -> ");
+                            mailContents.push(" - 리플 - ");
                             for(let j=0; j<document.querySelector("ul.cmt_list").children[i].querySelector("ul.reply_list").children.length; j++) {
                                 getDCComments(mailContents, document.querySelector("ul.cmt_list").children[i].querySelector("ul.reply_list").children[j]);
                             }
-                            mailContents.push(" <- /리플 -> ");
+                            mailContents.push(" - /리플 - ");
                         }
                     }
                 }
@@ -122,7 +122,6 @@ async function scrapDCgallery(galleryLink) {
 
                 return mailContents; 
             });
-            // console.log(mailTitle, mailContents, lastPostedId);
             await main.trySendMail(mailTitle, mailContents);
             lastIds[siteName]=lastPostedId;
             rw.writeId(lastIds);
@@ -151,7 +150,7 @@ async function scrapStocksUsingApi(region) {
 
     function parseSummaryContents(container, elem) {
         for(let i=0; i<elem.length; i++) {
-            container.push(" <-------> ");
+            container.push(" ------- ");
 
             if(elem[i]["quoteType"] == "INDEX" || elem[i]["quoteType"] == "CURRENCY") {
                 container.push("[ " + elem[i]["shortName"] + " ]" + " - " + elem[i]["regularMarketPrice"]["fmt"] + " / " + elem[i]["regularMarketChangePercent"]["fmt"]);
@@ -167,7 +166,7 @@ async function scrapStocksUsingApi(region) {
 
     function parseStockContents(container, elem) {
         for(let i=0; i<elem.length; i++) {
-            container.push(" <-------> ");
+            container.push(" ------- ");
 
             if(elem[i]["quoteType"] == "INDEX" || elem[i]["quoteType"] == "CURRENCY") {
                 container.push("[ " + elem[i]["shortName"] + " (" + elem[i]["symbol"] + ")" + " ]" + " - " + elem[i]["regularMarketPrice"] + " / " + parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2) + "%"
@@ -206,6 +205,5 @@ async function scrapStocksUsingApi(region) {
         parseStockContents(mailContents, customStocks);
     }
 
-    // console.log(mailTitle, mailContents);
     await main.trySendMail(mailTitle, mailContents);
 }

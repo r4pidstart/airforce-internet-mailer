@@ -29,10 +29,10 @@ async function start()
     await scrap.DC();
     setInterval(scrap.DC, 1200000);
     
-    const usStockMarket = schedule.scheduleJob("0 0,2,4,6 * * 2-6", () => {
+    const usStockMarket = schedule.scheduleJob("0 0,3,6 * * 2-6", () => {
         scrap.stock("US");
     });
-    const krStockMarket = schedule.scheduleJob("30 9,11,13,15 * * 1-5", () => {
+    const krStockMarket = schedule.scheduleJob("30 9,12,15 * * 1-5", () => {
         scrap.stock("KR");
     });
 }
