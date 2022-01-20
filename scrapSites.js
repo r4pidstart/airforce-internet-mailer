@@ -92,7 +92,8 @@ async function scrapDCgallery(galleryLink) {
                 
                 let mailContents = [];
                 try {
-                    async function querySelect() {
+                    let lst;
+                    await new Promise(resolve => {
                         let ret = [];
                         ret.push(document.querySelector("div.fl.clear > h2 > a").innerText);
                         ret.push(document.querySelector("span.title_subject").innerText);
@@ -100,10 +101,8 @@ async function scrapDCgallery(galleryLink) {
                         ret.push(document.querySelector("span.gall_date").innerText);
                         ret.push(document.querySelector("div.write_div").children);
                         ret.push(document.querySelector("ul.cmt_list").children);
-                        return ret;
-                    }
-                    let lst;
-                    await querySelect().then(res => lst=res);
+                        resolve(ret);
+                    }).then(res => lst=res);
                     const [galleryName, postName, postWriter, postDate, mainBody, commentsBody] = lst;
                     
                     mailContents.push(`${galleryName} / ${postName} / ${postWriter} / ${postDate}`);
@@ -121,17 +120,16 @@ async function scrapDCgallery(galleryLink) {
                         else if(commentsBody[i].classList.length == 0) {
                             mailContents.push(" - 리플 - ");
                             for(let j=0; j<commentsBody[i].querySelector("ul.reply_list").children.length; j++) {
-                                getDCComments(mailContents, commentsBody[i].querySelector("ul.reply_list").children[j]);
+                                await getDCComments(mailContents, commentsBody[i].querySelector("ul.reply_list").children[j]);
                             }
                             mailContents.push(" - /리플 - ");
                         }
                     }
                 }
-                catch {console.log(e)};
+                catch(e) {console.log(e)};
 
                 return mailContents; 
             });
-            console.log(mailContents);
             await main.trySendMail(mailTitle, mailContents);
             lastIds[siteName]=lastPostedId;
             rw.writeId(lastIds);
