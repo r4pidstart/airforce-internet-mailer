@@ -17,14 +17,14 @@
   
 2. 다운받은 폴더에서 터미널을 실행한 뒤 필요한 모듈을 설치해요.
   
-      > npm install puppeteer node-schedule axios
+      ``` npm install puppeteer node-schedule axios ```
   
 
 ![pic1](https://user-images.githubusercontent.com/67845112/150377190-99398b9e-ef0c-408d-985e-596b663931f0.png)
 
 3. 프로그램을 실행한 뒤 필요한 정보를 입력해요.
   
-      > node main.js
+      ``` node main.js ```
   
       주식 기능을 이용하고 싶다면, [Yahoo Finance API](https://www.yahoofinanceapi.com/dashboard) 에서 'API key' 를 찾아 써주세요.
 ![pic2](https://user-images.githubusercontent.com/67845112/150377742-7f2ac50a-769f-410c-b3d0-840271ece448.png)
