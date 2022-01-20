@@ -55,7 +55,7 @@ async function doInitSettings() {
     });
     const userName = await new Promise(resolve => {
         rl.question("메일을 보내는 데 사용할 이름\n>> ", resolve);
-    }, resolve);
+    });
     const userRelationship = await new Promise(resolve => {
         rl.question("메일을 보내는 사람과의 관계\n>> ", resolve);
     });

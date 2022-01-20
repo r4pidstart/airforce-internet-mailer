@@ -13,7 +13,7 @@ const userZipcode = rw.readSettings("userZipcode");
 const userAddress = rw.readSettings("userAddress");
 const pw = rw.readSettings("userPassword");
 
-// 0: 기본군사훈련단, 1: 군수1학교, 3: 군수2학교, 4: 정보통신학교, 5:행정학교, 6: 방공포병학교
+// 0: 기본군사훈련단, 1: 군수1학교, 2: 군수2학교, 3: 정보통신학교, 4:행정학교, 5: 방공포병학교
 const urlNumber = rw.readSettings("mailTarget");
 const urls = [
     "https://www.airforce.mil.kr/user/indexSub.action?codyMenuSeq=156893223&siteId=last2", // 기본군사훈련단
@@ -56,7 +56,6 @@ async function sendMail(title, contents) {
     await page.type("#birthMonth", soldierBirthday.month);
     await page.type("#birthDay", soldierBirthday.day);
     
-    await page.waitForTimeout(100);
     await page.click("#btnNext");
     await nav
     let pages = await browser.pages();
@@ -68,18 +67,19 @@ async function sendMail(title, contents) {
     await page.waitForSelector("div.UIbtn > span > input");
     await page.click("div.UIbtn > span > input");
     
-    // 보내는 사람 입력
     await page.waitForSelector("#senderZipCode");
-    await page.$eval("#senderZipCode", (el, userZipcode) => el.value=userZipcode, userZipcode); // 우편번호
-    await page.$eval("#senderAddr1", (el, userAddress) => el.value=userAddress, userAddress); // 주소 1
-    await page.$eval("#senderAddr2", el => el.value="."); // 주소 2
-    await page.$eval("#senderName", (el, userName) => el.value=userName, userName); // 보내는 사람
-    await page.$eval("#relationship", (el, userRelationship) => el.value=userRelationship, userRelationship); // 관계
-
-    // 내용 입력
-    await page.$eval("#title", (el, title) => el.value=title, title);
-    await page.$eval("#contents", (el, contents) => el.value=contents, contents.join(''));
-    await page.$eval("#password", (el, pw) => el.value=pw, pw);
+    await Promise.all([
+        // 보내는 사람 입력
+        page.$eval("#senderZipCode", (el, userZipcode) => el.value=userZipcode, userZipcode), // 우편번호
+        page.$eval("#senderAddr1", (el, userAddress) => el.value=userAddress, userAddress), // 주소 1
+        page.$eval("#senderAddr2", el => el.value="."), // 주소 2
+        page.$eval("#senderName", (el, userName) => el.value=userName, userName), // 보내는 사람
+        page.$eval("#relationship", (el, userRelationship) => el.value=userRelationship, userRelationship), // 관계
+        // 내용 입력
+        page.$eval("#title", (el, title) => el.value=title, title),
+        page.$eval("#contents", (el, contents) => el.value=contents, contents.join('')),
+        page.$eval("#password", (el, pw) => el.value=pw, pw)
+    ]);
     
     // 발송
     await page.click(".submit");

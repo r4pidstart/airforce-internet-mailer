@@ -67,7 +67,7 @@ async function scrapDCgallery(galleryLink) {
         return posts;
     });
 
-    for(let i=postList.length-30; i>=0; i--) {
+    for(let i=postList.length-40; i>=0; i--) {
         if(parseInt(lastPostedId) < parseInt(postList[i])) {
             lastPostedId=postList[i];
             console.log(siteName + " / " +postList[i] + "번 게시물");
@@ -78,7 +78,7 @@ async function scrapDCgallery(galleryLink) {
                 return document.querySelector("div.fl.clear > h2 > a").innerText + " / " + document.querySelector("span.gall_date").innerText; 
             }) +  " / " + postList[i];
 
-            let mailContents = await page.evaluate(() => {
+            let mailContents = await page.evaluate(async () => {
 
                 async function getDCComments(container, elem) {
                     container.push(elem.querySelector("span.nickname").innerText + " // ");
@@ -92,36 +92,46 @@ async function scrapDCgallery(galleryLink) {
                 
                 let mailContents = [];
                 try {
-                    mailContents.push(document.querySelector("div.fl.clear > h2 > a").innerText + " / " + document.querySelector("span.title_subject").innerText + " / " 
-                        + document.querySelector("span.nickname.in > em").innerText + " / " + document.querySelector("span.gall_date").innerText + " ---본문--- ");
+                    async function querySelect() {
+                        let ret = [];
+                        ret.push(document.querySelector("div.fl.clear > h2 > a").innerText);
+                        ret.push(document.querySelector("span.title_subject").innerText);
+                        ret.push(document.querySelector("span.nickname.in > em").innerText);
+                        ret.push(document.querySelector("span.gall_date").innerText);
+                        ret.push(document.querySelector("div.write_div").children);
+                        ret.push(document.querySelector("ul.cmt_list").children);
+                        return ret;
+                    }
+                    let lst;
+                    await querySelect().then(res => lst=res);
+                    const [galleryName, postName, postWriter, postDate, mainBody, commentsBody] = lst;
                     
-                    // const mainBody = document.querySelector("div.write_div").children;
-                    for(let i=0; i<document.querySelector("div.write_div").children.length; i++)
-                        mailContents.push(document.querySelector("div.write_div").children[i].innerText + " ---- ");
+                    mailContents.push(`${galleryName} / ${postName} / ${postWriter} / ${postDate}`);
+
+                    mailContents.push(" ---본문--- ");
+                    for(let i=0; i<mainBody.length; i++)
+                        mailContents.push(mainBody[i].innerText + " ");
     
                     mailContents.push("---- 댓글 ---- ");
-                    // const commentsBody = document.querySelector("ul.cmt_list").children;
-    
-                    for(let i=0; i<document.querySelector("ul.cmt_list").children.length; i++){
-                        if(document.querySelector("ul.cmt_list").children[i].classList.contains("dory")) continue; // 광고?
-                        else if(document.querySelector("ul.cmt_list").children[i].classList.contains("ub-content")) {
-                            getDCComments(mailContents, document.querySelector("ul.cmt_list").children[i]);
+                    for(let i=0; i<commentsBody.length; i++){
+                        if(commentsBody[i].classList.contains("dory")) continue; // 광고?
+                        else if(commentsBody[i].classList.contains("ub-content")) {
+                            getDCComments(mailContents, commentsBody[i]);
                         }
-                        else if(document.querySelector("ul.cmt_list").children[i].classList.length == 0) {
-                            // const replyBody = document.querySelector("ul.cmt_list").children[i].querySelector("ul.reply_list").children;
-    
+                        else if(commentsBody[i].classList.length == 0) {
                             mailContents.push(" - 리플 - ");
-                            for(let j=0; j<document.querySelector("ul.cmt_list").children[i].querySelector("ul.reply_list").children.length; j++) {
-                                getDCComments(mailContents, document.querySelector("ul.cmt_list").children[i].querySelector("ul.reply_list").children[j]);
+                            for(let j=0; j<commentsBody[i].querySelector("ul.reply_list").children.length; j++) {
+                                getDCComments(mailContents, commentsBody[i].querySelector("ul.reply_list").children[j]);
                             }
                             mailContents.push(" - /리플 - ");
                         }
                     }
                 }
-                catch {}
+                catch {console.log(e)};
 
                 return mailContents; 
             });
+            console.log(mailContents);
             await main.trySendMail(mailTitle, mailContents);
             lastIds[siteName]=lastPostedId;
             rw.writeId(lastIds);
@@ -152,14 +162,20 @@ async function scrapStocksUsingApi(region) {
         for(let i=0; i<elem.length; i++) {
             container.push(" ------- ");
 
-            if(elem[i]["quoteType"] == "INDEX" || elem[i]["quoteType"] == "CURRENCY") {
-                container.push("[ " + elem[i]["shortName"] + " ]" + " - " + elem[i]["regularMarketPrice"]["fmt"] + " / " + elem[i]["regularMarketChangePercent"]["fmt"]);
+            const type = elem[i]["quoteType"];
+            const shortName = elem[i]["shortName"]; // only index, currency, future
+            const symbol = elem[i]["symbol"]; // only cryptocurrency
+            const marketPrice = elem[i]["regularMarketPrice"]["fmt"];
+            const marketChange = elem[i]["regularMarketChangePercent"]["fmt"];
+
+            if(type == "INDEX" || type == "CURRENCY") {
+                container.push(`[ ${shortName} ] - ${marketPrice} / ${marketChange}`);
             }
-            else if(elem[i]["quoteType"] == "FUTURE") {
-                container.push("[ " + elem[i]["shortName"] + " ]" + " - $" + elem[i]["regularMarketPrice"]["fmt"] + " / " + elem[i]["regularMarketChangePercent"]["fmt"]);
+            else if(type == "FUTURE") {
+                container.push(`[ ${shortName} ] - $${marketPrice} / ${marketChange}`);
             }
-            else if(elem[i]["quoteType"] == "CRYPTOCURRENCY") {
-                container.push("[ " + elem[i]["symbol"] + " ]" + " - $" + elem[i]["regularMarketPrice"]["fmt"] + " / " + elem[i]["regularMarketChangePercent"]["fmt"]);
+            else if(type == "CRYPTOCURRENCY") {
+                container.push(`[ ${symbol} ] - ${marketPrice} / ${marketChange}`)
             }
         }   
     }
@@ -168,17 +184,23 @@ async function scrapStocksUsingApi(region) {
         for(let i=0; i<elem.length; i++) {
             container.push(" ------- ");
 
-            if(elem[i]["quoteType"] == "INDEX" || elem[i]["quoteType"] == "CURRENCY") {
-                container.push("[ " + elem[i]["shortName"] + " (" + elem[i]["symbol"] + ")" + " ]" + " - " + elem[i]["regularMarketPrice"] + " / " + parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2) + "%"
-                    + " / Day range : " + elem[i]["regularMarketDayRange"] + " / 52 Week range : " + elem[i]["fiftyTwoWeekRange"]);
+            const type = elem[i]["quoteType"]
+            const shortName = elem[i]["shortName"];
+            const longName = elem[i]["longName"]; // only ETF
+            const symbol = elem[i]["symbol"];
+            const marketPrice = elem[i]["regularMarketPrice"];
+            const marketChange = parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2);
+            const dayRange = elem[i]["regularMarketDayRange"];
+            const fiftyTwoWeekRange = elem[i]["fiftyTwoWeekRange"];
+
+            if(type == "INDEX" || type == "CURRENCY") {
+                container.push(`[ ${shortName} ] (${symbol}) ] - ${marketPrice} / ${marketChange}% / Day range : ${dayRange} / 52-Week range : ${fiftyTwoWeekRange}`);
             }
-            else if(elem[i]["quoteType"] == "CRYPTOCURRENCY" || elem[i]["quoteType"] == "EQUITY" || elem[i]["quoteType"] == "FUTURE") {
-                container.push("[ " + elem[i]["shortName"] + " (" + elem[i]["symbol"] + ")" + " ]" + " - " + elem[i]["regularMarketPrice"] + "$ / " + parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2) + "%"
-                    + " / Day range : " + elem[i]["regularMarketDayRange"] + " / 52 Week range : " + elem[i]["fiftyTwoWeekRange"]);
+            else if(type == "CRYPTOCURRENCY" || type == "EQUITY" || type == "FUTURE") {
+                container.push(`[ ${shortName} ] (${symbol}) ] - $${marketPrice} / ${marketChange}% / Day range : ${dayRange} / 52-Week range : ${fiftyTwoWeekRange}`);
             }
-            else if(elem[i]["quoteType"] == "ETF") {
-                container.push("[ " + elem[i]["longName"] + " (" + elem[i]["symbol"] + ")" + " ]" + " - " + elem[i]["regularMarketPrice"] + " / " + parseFloat(elem[i]["regularMarketChangePercent"]).toFixed(2) + "%"
-                    + " / Day range : " + elem[i]["regularMarketDayRange"] + " / 52 Week range : " + elem[i]["fiftyTwoWeekRange"]);
+            else if(type == "ETF") {
+                container.push(`[ ${longName} ] (${symbol}) ] - ${marketPrice} / ${marketChange}% / Day range : ${dayRange} / 52-Week range : ${fiftyTwoWeekRange}`);
             }
         }   
     }
@@ -186,8 +208,7 @@ async function scrapStocksUsingApi(region) {
     const customStocksUrl = "https://yfapi.net/v6/finance/quote?region=US&lang=en&symbols=" + rw.readSettings(`${region}stockList`);
     const marketSummaryUrl = "https://yfapi.net/v6/finance/quote/marketSummary?lang=en&region=US";
     const nowTime = new Date();
-    const mailTitle = nowTime.getFullYear() + '/' + ('0'+(nowTime.getMonth()+1)).slice(-2) + '/' + ('0' + nowTime.getDate()).slice(-2) + " " 
-    + ('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2) + " - 이 시각 증권시장 " + region;
+    const mailTitle = `${nowTime.getFullYear()}/${('0'+(nowTime.getMonth()+1)).slice(-2)}/${('0' + nowTime.getDate()).slice(-2)} ${('0' + nowTime.getHours()).slice(-2)}:${('0' + nowTime.getMinutes()).slice(-2)} - 이 시각 ${region}증권시장`;
     let mailContents = [];
     let marketSummary, customStocks;
     
@@ -200,7 +221,6 @@ async function scrapStocksUsingApi(region) {
     }
     else if(region == "KR") {
         await axios.request(axiosOptions(customStocksUrl)).then(res => { customStocks=res.data["quoteResponse"]["result"]; });
-        delay(100000);
         mailContents.push(customStocks[0]["exchangeTimezoneName"] + " " + nowTime.toString());
         parseStockContents(mailContents, customStocks);
     }
